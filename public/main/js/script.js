@@ -311,7 +311,7 @@ function showResult(){
         },
         error: function (xhr, status, error) {
             $.toast({ 
-                text : xhr.responseJSON.message, 
+                text : xhr?.responseJSON ? xhr?.responseJSON.message : 'error', 
                 bgColor : 'red',              // Background color for toast
                 textColor : '#eee',            // text color
                 allowToastClose : true,       // Show the close button or not
