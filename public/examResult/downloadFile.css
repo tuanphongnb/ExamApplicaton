@@ -1,0 +1,65 @@
+/* style.css */
+
+* {
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    /* background-image: url("/public/lib/image/background-exam-result.jpg"); */
+    background-image: url('/lib/image/background-exam-result.jpg');
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: 100% 100%;
+}
+
+.container-download {
+    max-width: 500px;
+    margin: 130px auto;
+}
+.container-download h1 {
+    text-align: center;
+    color: darkblue;
+}
+
+.container-download form label {
+    color: white;
+    font-weight: 600;
+}
+
+.container-download form {
+    background-color: #396278;
+    padding: 30px;
+}
+.container-download form .input-group {
+    margin-bottom: 15px;
+}
+.container-download form label {
+    display: block;
+    margin-bottom: 10px;
+}
+.container-download form input {
+    padding: 12px 20px;
+    width: 100%;
+    border: 1px solid #ccc;
+}
+.container-download .submit-btn {
+    width: 100%;
+    border: none;
+    background: #00b856;
+    font-size: 18px;
+    color: white;
+    border-radius: 3px;
+    padding: 20px;
+    text-align: center;
+}
+
+
+.container-download .exam{
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+.container-download .exam .exam_name{
+    width: 100%;
+}

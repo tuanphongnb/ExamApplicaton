@@ -12,6 +12,7 @@ const timeText = document.querySelector(".timer .time_left_txt");
 const timeCount = document.querySelector(".timer .timer_sec");
 const student_name = document.querySelector(".start_quiz .input-group #student_name");
 const section_quiz = document.querySelector(".quiz_box #sectionQuiz");
+const select_Exam = document.querySelector(".start_quiz .exam .exam_name");
 let que_count = 0;
 let que_numb = 1;
 let userScore = 0;
@@ -19,14 +20,18 @@ let counter;
 let counterLine;
 let widthValue = 0;
 var questions = [];
+let exams = [];
+let exam_selected;
+let exam_selected_name;
 // if startQuiz button clicked
 
 start_quiz.addEventListener("submit", submitForm);
-function submitForm(){
+function submitForm(e){
+    e.preventDefault();
     // timeCount.innerHTML = timeCount.innerHTML;
     // $(quiz_box)[0].reset();
-    info_box.classList.add("activeInfo"); //show info box
     start_quiz.classList.remove("activeInfo");
+    info_box.classList.add("activeInfo"); //show info box
 }
 
 // if exitQuiz button clicked
@@ -120,20 +125,27 @@ prev_btn.onclick = ()=>{
 
 // getting questions and options from array
 function showQuetions(index, callback){
+    exam_selected = $(select_Exam).find(":selected").val();
+    exam_selected_name = $(select_Exam).find(":selected").text();
+    exams.forEach(exam => {
+        if (exam["id"] == exam_selected) {
+            timeCount.innerHTML = exam["count_down_time"];
+            return;
+        }
+    });
 	$.ajax({
         url: '/loadQuestions',
         // dataType: "jsonp",
         data: {
-            'sheetName': 'Sheet1',
+            'examId': exam_selected
         },
         type: 'POST',
         jsonpCallback: 'callback', // this is not relevant to the POST anymore
         success: function (res) {
             // var res = jQuery.parseJSON(data);
             // $('#lblResponse').html(res.msg);
-            // res.forEach((item) => item.Answer_User = "");
+            // res.forEach((item) => item.answer_user = "");
             // localStorage.setItem("questions", JSON.stringify(res));
-            timeCount.innerHTML = "10:00";
             questions = res;
             loadQuestions(index);
             callback();
@@ -152,41 +164,38 @@ function loadQuestions(index){
     prev_btn.disabled = false;
     prev_btn.classList.remove("disabled");
     //creating a new span and div tag for question and option and passing the value using array index
-    var que_tag = '<span>'+ questions[index].Num + ". " + questions[index].Question +'</span>';
+    var que_tag = '<span>'+ questions[index].num + ". " + questions[index].question +'</span>';
     var option_tag = [];
     var column_answer = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K","L", "M",
                          "N", "O", "P", "Q", "R","S", "T", "U", "V", "W", "X", "Y", "Z"]
     Object.keys(questions[index]).forEach(col => {
-        if (column_answer.includes(col.replaceAll("Answer_", "")) && questions[index].Answer_User == undefined) {
-            optionAnswer = "<label class='option'>" +
+        if (column_answer.includes(col.replaceAll("Answer_", "")) && questions[index].answer_user == undefined) {
+            optionAnswer = "<div class= 'option'><label>" +
             "<input type='radio' class='form-check-input' name='option' id='"+col+"' value='" + questions[index][col] 
-            + "'><label id='optionval'>" + questions[index][col] + "</label></label>";
+            + "'><span id='optionval'>" + questions[index][col] + "</span></label></div>";
             // option_tag.push('<div class="option"><span>'+ questions[index][col] +'</span></div>');
             option_tag.push(optionAnswer);
         }
-        if (column_answer.includes(col.replaceAll("Answer_", "")) && questions[index].Answer_User != undefined && questions[index][col] != questions[index].Answer_User) {
-            optionAnswer = "<label class='option'>" +
+        if (column_answer.includes(col.replaceAll("Answer_", "")) && questions[index].answer_user != undefined && questions[index][col] != questions[index].answer_user) {
+            optionAnswer = "<div class= 'option'><label>" +
             "<input type='radio' class='form-check-input' name='option' id='"+col+"' value='" + questions[index][col] 
-            + "'><label id='optionval'>" + questions[index][col] + "</label></label>";
+            + "'><span id='optionval'>" + questions[index][col] + "</span></label></div>";
             // option_tag.push('<div class="option"><span>'+ questions[index][col] +'</span></div>');
             option_tag.push(optionAnswer);
         }
-        if (column_answer.includes(col.replaceAll("Answer_", "")) && questions[index].Answer_User != undefined && questions[index][col] == questions[index].Answer_User) {
-            optionAnswer = "<label class='option'>" +
+        if (column_answer.includes(col.replaceAll("Answer_", "")) && questions[index].answer_user != undefined && questions[index][col] == questions[index].answer_user) {
+            optionAnswer = "<div class= 'option'><label>" +
             "<input type='radio' class='form-check-input' name='option' id='"+col+"' value='" + questions[index][col] +"' checked='checked'"
-            + "'><label id='optionval'>" + questions[index][col] + "</label></label>";
+            + "'><span id='optionval'>" + questions[index][col] + "</span></label></div>";
             // option_tag.push('<div class="option"><span>'+ questions[index][col] +'</span></div>');
             option_tag.push(optionAnswer);
         }
     });
-    // var option_tag = '<div class="option"><span>'+ questions[index].Answer_A +'</span></div>'
-    // + '<div class="option"><span>'+ questions[index].Answer_B +'</span></div>'
-    // + '<div class="option"><span>'+ questions[index].Answer_C +'</span></div>'
-    // + '<div class="option"><span>'+ questions[index].Answer_D +'</span></div>';
+
     que_text.innerHTML = que_tag; //adding new span tag inside que_tag
     option_list.innerHTML = option_tag.join(""); //adding new div tag inside option_tag
     
-    const option = option_list.querySelectorAll(".option");
+    const option = option_list.querySelectorAll(".option input");
     if (index <= 0 ) {
         prev_btn.disabled = true;
         prev_btn.classList.add("disabled")
@@ -246,9 +255,9 @@ let crossIconTag = '<div class="icon cross"><i class="fas fa-times"></i></div>';
 function optionSelected(answer){
     // clearInterval(counter); //clear counter
     // clearInterval(counterLine); //clear counterLine
-    let userAns = answer.textContent; //getting user selected option
-    // let correcAns = questions[que_count][questions[que_count].Answer_Correct]; //getting correct answer from array
-    questions[que_count].Answer_User = userAns;
+    let userAns = answer.id; //getting user selected option
+    // let correcAns = questions[que_count][questions[que_count].answer_correct]; //getting correct answer from array
+    questions[que_count].answer_user = userAns;
     // const allOptions = option_list.children.length; //getting all option items
     
     // if(userAns == correcAns){ //if user selected option is equal to array's correct answer
@@ -281,13 +290,15 @@ function showResult(){
     $.ajax({
         url: '/processResult',
         data: {
+            'examName': exam_selected_name,
             'studentName': student_name.value,
-            'examResultDetail': questions,
+            'examResultDetails': questions,
             'studentScore': userScore
         },
         type: 'POST',
         jsonpCallback: 'callback', // this is not relevant to the POST anymore
         success: function (res) {
+            showCalculatorResult();
             $.toast({ 
                 text : "Hoàn thành", 
                 bgColor : 'green',              // Background color for toast
@@ -299,25 +310,35 @@ function showResult(){
               });
         },
         error: function (xhr, status, error) {
-            console.log('Error: ' + error.message);
-            $('#lblResponse').html('Error connecting to the server.');
+            $.toast({ 
+                text : xhr.responseJSON.message, 
+                bgColor : 'red',              // Background color for toast
+                textColor : '#eee',            // text color
+                allowToastClose : true,       // Show the close button or not
+                hideAfter : 5000,              // `false` to make it sticky or time in miliseconds to hide after
+                textAlign : 'left',            // Alignment of text i.e. left, right, center
+                position : 'bottom-right'       // bottom-left or bottom-right or bottom-center or top-left or top-right or top-center or mid-center or an object representing the left, right, top, bottom values to position the toast on page
+              });
+              setTimeout(() => {window.location.reload()}, 5000);
+             
         },
     });
 }
 
 function preCalculatorResult(){
+    for (let index = 0; index < questions.length; index++) {
+        var correcAns = questions[index].answer_correct; //getting correct answer from array
+        if (questions[index].answer_user == correcAns) {
+            userScore ++; //if user selected option is equal to array's correct answer
+        }
+    }
+}
+
+function showCalculatorResult(){
     info_box.classList.remove("activeInfo"); //hide info box
     quiz_box.classList.remove("activeQuiz"); //hide quiz box
     result_box.classList.add("activeResult"); //show result box
     const scoreText = result_box.querySelector(".score_text");
-
-    for (let index = 0; index < questions.length; index++) {
-        var correcAns = questions[index][questions[index].Answer_Correct]; //getting correct answer from array
-        if (questions[index].Answer_User == correcAns) {
-            userScore ++; //if user selected option is equal to array's correct answer
-        }
-    }
-
     if (userScore > 3){ // if user scored more than 3
         //creating a new span tag and passing the user score number and total question number
         let scoreTag = '<span>Xin chúc mừng! 🎉, bạn có ' + userScore + ' câu trả lời đúng trên tổng số ' + questions.length + ' câu hỏi</span>';
@@ -331,20 +352,6 @@ function preCalculatorResult(){
         let scoreTag = '<span>Xin lỗi 😐, bạn có ' + userScore + ' câu trả lời đúng trên tổng số ' + questions.length + ' câu hỏi</span>';
         scoreText.innerHTML = scoreTag;
     }
-    
-    // if (userScore > 3){ // if user scored more than 3
-    //     //creating a new span tag and passing the user score number and total question number
-    //     let scoreTag = '<span>and congrats! 🎉, You got <p>'+ userScore +'</p> out of <p>'+ questions.length +'</p></span>';
-    //     scoreText.innerHTML = scoreTag;  //adding new span tag inside score_Text
-    // }
-    // else if(userScore > 1){ // if user scored more than 1
-    //     let scoreTag = '<span>and nice 😎, You got <p>'+ userScore +'</p> out of <p>'+ questions.length +'</p></span>';
-    //     scoreText.innerHTML = scoreTag;
-    // }
-    // else{ // if user scored less than 1
-    //     let scoreTag = '<span>and sorry 😐, You got only <p>'+ userScore +'</p> out of <p>'+ questions.length +'</p></span>';
-    //     scoreText.innerHTML = scoreTag;
-    // }
 }
 
 function startTimer(time){
@@ -373,11 +380,11 @@ function startTimer(time){
             showResult(); //calling showResult function
             timeText.textContent = "Time Off"; //change the time text to time off
             const allOptions = option_list.children.length; //getting all option items
-            let correcAns = questions[que_count][questions[que_count].Answer_Correct]; //getting correct answer from array
+            let correcAns = questions[que_count][questions[que_count].answer_correct]; //getting correct answer from array
             for(i=0; i < allOptions; i++){
                 if(option_list.children[i].textContent == correcAns){ //if there is an option which is matched to an array answer
                     option_list.children[i].setAttribute("class", "option correct"); //adding green color to matched option
-                    option_list.children[i].insertAdjacentHTML("beforeend", tickIconTag); //adding tick icon to matched option
+                    // option_list.children[i].insertAdjacentHTML("beforeend", tickIconTag); //adding tick icon to matched option
                     console.log("Time Off: Auto selected correct answer.");
                 }
             }
@@ -404,4 +411,29 @@ function queCounter(index){
     //creating a new span tag and passing the question number and total question
     let totalQueCounTag = '<span><p>'+ index +'</p> of <p>'+ questions.length +'</p> Questions</span>';
     bottom_ques_counter.innerHTML = totalQueCounTag;  //adding new span tag inside bottom_ques_counter
+}
+
+function loadExam(){
+    $.ajax({
+        type: 'GET',
+        url: '/loadExam',
+        success:function(data){
+            if (data) {            
+                exams = data;
+                var options = ''; //create your "title" option
+                $(exams).each(function(index, exam){ //loop through your elements
+                    options += '<option value="'+exam.id+'">'+exam.name+'</option>'; //add the option element as a string
+                });
+    
+                $(select_Exam).append(options);
+            }
+            else{
+                start_btn.classList.add("disabled");
+            }
+            
+            $(select_Exam).select2({
+                placeholder: 'Chọn đề kiểm tra'
+              });
+        }
+    });
 }

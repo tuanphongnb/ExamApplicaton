@@ -1,9 +1,10 @@
 /* style.css */
 body {
-    background-color: rgb(6, 26, 27);
+    background-color: #396278;
 }
 * {
     box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
 }
 .container {
     max-width: 500px;
@@ -13,10 +14,19 @@ body {
     text-align: center;
     color: white;
 }
+
 form {
     background-color: white;
     padding: 30px;
 }
+
+
+.container form .input-group label {
+    color: black;
+    font-weight: 200;
+    font-size: 14px;
+}
+
 form .input-group {
     margin-bottom: 15px;
 }
@@ -32,10 +42,11 @@ form input {
 .submit-btn {
     width: 100%;
     border: none;
-    background: rgb(37, 83, 3);
+    background: green;
     font-size: 18px;
     color: white;
     border-radius: 3px;
     padding: 20px;
     text-align: center;
+    cursor: auto;
 }

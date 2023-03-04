@@ -10,18 +10,25 @@ const { param } = require('express/lib/request');
 const xlsx = require('xlsx');
 const ExcelJS = require('exceljs');
 
+const ExamService = require('../domain/exam_service');
+const ExamDetailService = require('../domain/exam_detail_service');
+const DBContext = require('../infratructure/db_context');
 const quizPath = '../../public/index.html';
-const uploadQuizPath = '../../public/uploadFile/uploadFile.html';
+const uploadQuizPath = '../../public/exam/uploadFile.html';
+const downloadQuizResultPath = "../../public/examResult/downloadFile.html";
 const uploadPath = 'uploads';
-const examPath = '../uploads/6A3_2023_Toan_15Phut.xlsx';
-const examResultPath = "../uploads/Exam_Result.xlsx";
+const examResultPath = path.join(__dirname,"../%s1/%s2.xlsx");
 const sheetSummaryName = "Summary";
+const dbFilePath = path.resolve(__dirname, '../data/EducationExam.db');
 
+const db_context = new DBContext(dbFilePath);
+var examService = new ExamService(db_context);
+var examDetailService = new ExamDetailService(db_context);
 app.use(express.static(path.join(__dirname, '../../public')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // SET STORAGE
-var storage = multer.diskStorage({
+var storage = multer.memoryStorage({
     destination: function (req, file, cb) {
         var dirname = path.join(__dirname, uploadPath);
         //   let Id = req.body.id;
@@ -33,7 +40,7 @@ var storage = multer.diskStorage({
         //   });
         console.log(dirname);
         console.log(fs.existsSync(dirname));
-        cb(null, 'uploads');
+        cb(null, uploadPath);
     },
     filename: function (req, file, cb) {
         cb(null, file.originalname)
@@ -87,29 +94,53 @@ app.get('/quiz', function (req, res) {
     res.sendFile(path.join(__dirname, quizPath));
 });
 
-app.get('/uploadFile', function (req, res) {
+app.get('/exam', function (req, res) {
 
     res.sendFile(path.join(__dirname, uploadQuizPath));
 });
 
-app.post("/upload_files", uploadFiles);
+app.get('/examResult', function (req, res) {
+
+    res.sendFile(path.join(__dirname, downloadQuizResultPath));
+});
+
+app.get('/loadExam',async function (req, res) {
+    var result = await examService.getExam();
+    res.json(result);
+});
+
+app.post("/upload_exam", upload, uploadFiles);
 function uploadFiles(req, res) {
     try {
-        create_upload_dir(uploadPath);
-        upload(req, res, function (err) {
-            if (err instanceof multer.MulterError) {
-                console.log("Multer Error: " + err);
-            } else if (err) {
-                console.log("Error: " + err);
-            }
-        });
+        // let path = req.file.path;
+        var workbook = xlsx.read(req.file.buffer);
+        var sheet_name_list = workbook.SheetNames;
+        let jsonData = xlsx.utils.sheet_to_json(
+          workbook.Sheets[sheet_name_list[0]]
+        );
+        if (jsonData.length === 0) {
+          return res.status(400).json({
+            success: false,
+            message: "Sheet has no data",
+          });
+        }
+        examService.createExam(jsonData, req.body.exam_name, req.body.exam_time, "admin");
         res.json({ message: "Successfully uploaded file" });
     } catch (error) {
         console.error(error);
         console.error("Upload error");
     }
-
 }
+
+app.get('/download_exam_result', async function (req, res) {
+    try {
+        var filePath = parameterizedString(examResultPath, uploadPath, req.query.examName);
+        res.download(filePath); // Set disposition and send it.
+    } catch (error) {
+        console.log(error);
+    }
+
+});
 
 app.post('/importQuestions', function (req, res) {
     console.log("------------------------------------------------------");
@@ -136,24 +167,20 @@ const deleteFolderRecursive = function (directoryPath) {
 };
 
 
-app.post('/loadQuestions', function (req, res) {
-    const result = excelToJson({
-        sourceFile: examPath,
-        header: {
-            rows: 1
-        },
-        sheets: [req.body.sheetName],
-        columnToKey: {
-            '*': '{{columnHeader}}'
-        }
-    });
+app.post('/loadQuestions', async function (req, res) {
+    try {
+        var result = await examDetailService.getExamDetailByExamId(req.body.examId);
+        res.json(result);
+    } catch (error) {
+        console.log(error);
+    }
 
-    res.json(result[req.body.sheetName]);
 });
 
 app.post('/processResult',async function (req, res) {
-    try {
-        if(!fs.existsSync(examResultPath)){
+    try {   
+        var saveFilePath = parameterizedString(examResultPath, uploadPath, req.body.examName);
+        if(!fs.existsSync(saveFilePath)){
             var data = [{
                 StudentName: null,
                 StudentScore: null
@@ -162,12 +189,13 @@ app.post('/processResult',async function (req, res) {
             var wb = xlsx.utils.book_new();
             xlsx.utils.book_append_sheet(wb, ws, sheetSummaryName);
             // xlsx.utils.book_set_sheet_visibility(wb, "Sheet1", xlsx.utils.consts.SHEET_HIDDEN);
-           await xlsx.writeFile(wb, examResultPath);
+           await xlsx.writeFile(wb, saveFilePath);
         }
-        await saveExamResultDetail(req);
-        await saveExamResult(req);
+        await saveExamResultDetail(req, saveFilePath);
+        await saveExamResult(req, saveFilePath);
 
     } catch (error) {
+        console.error(error.message);
         if (error.message.includes(req.body.studentName)) {
             return res.status(500).send({message: req.body.studentName + " đã làm bài kiểm tra"});
         }   
@@ -175,10 +203,10 @@ app.post('/processResult',async function (req, res) {
     return res.json("DONE");
 });
 
-const saveExamResult = async function (data) {
+const saveExamResult = async function (data, saveFilePath) {
     try {
         var workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.readFile(examResultPath);
+        await workbook.xlsx.readFile(saveFilePath);
         var worksheet = workbook.getWorksheet(sheetSummaryName);
         var headers = getHeaders(worksheet, 1);
         var examSummary = {
@@ -186,10 +214,10 @@ const saveExamResult = async function (data) {
             StudentScore: data.body.studentScore
         };
         if (headers == null || headers.length == 0) {
-            var file = await xlsx.readFile(examResultPath);
+            var file = await xlsx.readFile(saveFilePath);
             var ws = xlsx.utils.json_to_sheet([examSummary], {skipHeader: false});
             xlsx.utils.book_append_sheet(file, ws, sheetSummaryName);
-            await xlsx.writeFile(file, examResultPath);
+            await xlsx.writeFile(file, saveFilePath);
         }
         else {
             var headerColumns = [];
@@ -198,7 +226,7 @@ const saveExamResult = async function (data) {
             });
             worksheet.columns = headerColumns;
             worksheet.addRow(examSummary);
-            await workbook.xlsx.writeFile(examResultPath);
+            await workbook.xlsx.writeFile(saveFilePath);
         }
 
     } catch (error) {
@@ -207,12 +235,24 @@ const saveExamResult = async function (data) {
     }
 }
 
-const saveExamResultDetail = async function (data) {
+const saveExamResultDetail = async function (data, saveFilePath) {
     try {
-        var file = await xlsx.readFile(examResultPath);
-        var ws = xlsx.utils.json_to_sheet(data.body.examResultDetail, {skipHeader: false});
+        data.body.examResultDetails.forEach(item => {
+            item.Num = item.num;
+            item.Question = item.question;
+            item.Answer_Correct = item.answer_correct;
+            item.Answer_User = item.answer_user;
+            delete item.id;
+            delete item.exam_id;
+            delete item.num;
+            delete item.question;
+            delete item.answer_correct;
+            delete item.answer_user;
+        });
+        var file = await xlsx.readFile(saveFilePath);
+        var ws = xlsx.utils.json_to_sheet(data.body.examResultDetails, {skipHeader: false});
         xlsx.utils.book_append_sheet(file, ws, data.body.studentName);
-        await xlsx.writeFile(file, examResultPath);
+        await xlsx.writeFile(file, saveFilePath);
     } catch (error) {
         throw error;
     }
@@ -231,6 +271,25 @@ var getHeaders = function(worksheet, index) {
     }
     return result;
 }
+
+
+/***
+ * @example parameterizedString("my name is %s1 and surname is %s2", "John", "Doe");
+ * @return "my name is John and surname is Doe"
+ *
+ * @firstArgument {String} like "my name is %s1 and surname is %s2"
+ * @otherArguments {String | Number}
+ * @returns {String}
+ */
+const parameterizedString = (...args) => {
+    const str = args[0];
+    const params = args.filter((arg, index) => index !== 0);
+    if (!str) return "";
+    return str.replace(/%s[0-9]+/g, matchedStr => {
+      const variableIndex = matchedStr.replace("%s", "") - 1;
+      return params[variableIndex];
+    });
+  }
 
 var port = process.env.PORT || 8080;
 http.createServer(app).listen(port);

@@ -6,15 +6,18 @@ function onSelectFileHandler(e){
 }
 function submitForm(e) {
     e.preventDefault();
-    var name = document.getElementById("name");
+    var exam_name = document.getElementById("exam_name");
+    var exam_time = document.getElementById("exam_time");
     var file = document.getElementById("file");
     var formData = new FormData();
+    formData.append("exam_name", exam_name.value);
+    formData.append("exam_time", exam_time.value);
     formData.append("file", file.files[0]);
     const reader = new FileReader();
     reader.readAsDataURL(file.files[0]);
     reader.onload = function (evt) {
         $.ajax({
-            url: '/upload_files',
+            url: '/upload_exam',
             dataType: "json",
             data: formData,
             type: 'POST',

@@ -21,13 +21,20 @@
     <link rel="stylesheet" href="/lib/fontawesome-5.15.4/css/all.min.css" />
     <script src="/node_modules/jquery-toast-plugin/dist/jquery.toast.min.js" type="text/javascript"></script>
     <link rel="stylesheet" href="/node_modules/jquery-toast-plugin/dist/jquery.toast.min.css" />
+    <link rel="stylesheet" href="/lib/select2/select2.min.css" />
+    <script src="/lib/select2/select2.min.js" type="text/javascript"></script>
     <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha.6/css/bootstrap.min.css"> -->
 </head>
 
 <body>
     <!-- start Quiz button -->
+    
     <form action="#" class="start_quiz activeInfo">
+        <div class="exam">        
+            <select class="exam_name" name="exam_name">
+            </select>
+        </div>
         <div class="input-group"><input id="student_name" placeholder="Họ và tên"  required="required"></div>
         <div class="start_btn"><button type="submit">Bắt đầu</button></div>
     </form>
@@ -38,9 +45,10 @@
         <div class="info-list">
             <div class="info">1. Bạn chỉ có <span>15s</span> để thực hiện bài kiểm tra.</div>
             <div class="info">2. Bạn chỉ được chọn một câu trả lời.</div>
-            <div class="info">3. Bạn không thể chọn bất kỳ câu trả lời nào khi hết thời gian</div>
+            <div class="info">3. Bạn không thể chọn bất kỳ câu trả lời nào khi hết thời gian.</div>
             <div class="info">4. Bạn không rời máy khi đang thực hiện bài kiểm tra.</div>
-            <div class="info">5. Bạn sẽ có kết quả khi kết thúc bài kiểm tra.</div>
+            <div class="info">5. Bạn không chuyển tab khác trong thời gian làm bài kiểm tra.</div>
+            <div class="info">6. Bạn sẽ có kết quả khi kết thúc bài kiểm tra.</div>
         </div>
         <div class="buttons">
             <button class="quit">Kết thúc</button>
@@ -101,16 +109,15 @@
     <!-- Inside this JavaScript file I've coded all Quiz Codes -->
     
     <script>
-        // $(window).on( "load", function() {
-        //     const timeCount = document.querySelector(".timer .timer_sec");
-        //     timeCount.innerHTML = "10:00";
-        // });
-        // $( document ).ready(function() {
+        $(window).on("load", function() {
+            loadExam();
+        });
+        // $(document).ready(function() {
         //     const timeCount = document.querySelector(".timer .timer_sec");
         //     timeCount.value = "00:10";
         // });
      
-        // $( window ).on( "load", function() {
+        // $(window).on("load", function() {
         //     console.log( "window loaded" );
         // });
     </script>

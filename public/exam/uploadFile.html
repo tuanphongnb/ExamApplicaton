@@ -20,14 +20,18 @@
 </head>
 <body>
     <div class="container">
-        <h1>File Upload</h1>
+        <h1>Tạo đề kiểm tra</h1>
         <form id='form'>
             <div class="input-group">
-                <label for='name'>Your name</label>
-                <input name='name' id='name' placeholder="Enter your name" />
+                <label for='name'>Tên bài kiểm tra:</label>
+                <input name='exam_name' id='exam_name' placeholder="Nhập tên bài kiểm tra" required="required"/>
             </div>
             <div class="input-group">
-                <label for='files'>Select files</label>
+                <label for='name'>Thời gian:</label>
+                <input name='exam_time' id='exam_time' placeholder="Nhập thời gian" required="required"/>
+            </div>
+            <div class="input-group">
+                <label for='files'>Chọn đề kiểm tra:</label>
                 <input id='file' type="file" single accept=".xls, .xlsx" onclick=onSelectFileHandler(this)>
                 <!-- <input id='files' type="file" multiple> -->
             </div>
