@@ -22,7 +22,7 @@ const uploadPath = 'uploads';
 const examResultPath = path.join(__dirname,"../%s1/%s2.xlsx");
 const sheetSummaryName = "Summary";
 const dbFilePath = path.resolve(__dirname, '../data/EducationExam.db');
-
+const moment = require("moment");
 const db_context = new DBContext(dbFilePath);
 var examService = new ExamService(db_context);
 var examDetailService = new ExamDetailService(db_context);
@@ -222,7 +222,6 @@ app.post('/testStyleExcel', async function (req, res) {
     } catch (error) {
         console.log(error);
     }
-
 });
 
 function formatExcelStyle(workbook) {
@@ -237,9 +236,10 @@ function formatExcelStyle(workbook) {
                 if (Object.hasOwnProperty.call(ws, key)) {
                     ws[key].s = {
                         border: getSheetBorder(),
+                        fill: { fgColor: { rgb: "2ea5c7" } },
                         font: {
                             name: 'arial',
-                            sz: 12,
+                            sz: 10,
                             bold: true,
                             // color: { rgb: "FFFFAA00" }
                         },
@@ -261,7 +261,7 @@ function formatExcelCols(json) {
             return 0;
         }
         let widthArr = Object.keys(json[0]).map(key => {
-            return { width: key.length + 2 } // plus 2 to account for short object keys
+            return { width: key.length + 10 } // plus 2 to account for short object keys
         })
         for (let i = 0; i < json.length; i++) {
             let value = Object.values(json[i]);
@@ -294,7 +294,8 @@ app.post('/processResult',async function (req, res) {
         if(!fs.existsSync(saveFilePath)){
             var data = [{
                 StudentName: null,
-                StudentScore: null
+                StudentScore: null,
+                CompletedTime: null
             }];
             var ws = xlsx.utils.json_to_sheet(data);
             var wb = xlsx.utils.book_new();
@@ -304,7 +305,7 @@ app.post('/processResult',async function (req, res) {
         }
         await saveExamResultDetail(req, saveFilePath);
         await saveExamResult(req, saveFilePath);
-
+        return res.json("DONE");
     } catch (error) {
         console.error(error.message);
         if (error.message.includes(req.body.studentName)) {
@@ -312,7 +313,6 @@ app.post('/processResult',async function (req, res) {
         }
         throw error;
     }
-    return res.json("DONE");
 });
 
 const saveExamResult = async function (data, saveFilePath) {
@@ -323,7 +323,8 @@ const saveExamResult = async function (data, saveFilePath) {
         var headers = getHeaders(worksheet, 1);
         var examSummary = {
             StudentName: data.body.studentName,
-            StudentScore: data.body.studentScore
+            StudentScore: data.body.studentScore,
+            CompletedTime: moment(new Date()).format("DD-MM-YYYY HH:mm:ss")
         };
         if (headers != null && headers.length > 0) {
             var headerColumns = [];
@@ -396,30 +397,6 @@ var getSheetBorder = function() {
             style: 'thin', color: { rgb: "000000" }
         }
     }
-}
-var autofitColumns = function(worksheet) {
-    // const [startLetter, endLetter] = worksheet['!ref']?.replace(/\d/, '').split(':');
-    // let numRegexp = new RegExp(/\d+$/g);
-    // let start = startLetter.charCodeAt(0), end = endLetter.charCodeAt(0) + 1, rows = +numRegexp.exec(endLetter)[0];
-    // let ranges = [];
-    // for(let i = start; i < end; i++) {
-    //     ranges.push(i);
-    // }
-    // let objectMaxLength = [];
-    // ranges.forEach((c) => {
-    //     const cell = String.fromCharCode(c);
-    //     let maxCellLength = 0;
-    //     for(let y = 1; y <= rows; y++) {
-    //         if(`${cell}${y}`[0] === '!') continue;
-    //         let cellLength = worksheet[`${cell}${y}`] ? worksheet[`${cell}${y}`].v?.length + 1 : 0;
-    //         if(cellLength > maxCellLength) {
-    //             maxCellLength = cellLength;
-    //         }
-    //     }
-    //     objectMaxLength.push({ width: maxCellLength });
-    // });
-
-    worksheet['!cols'] = objectMaxLength;
 }
 
 var getHeaders = function(worksheet, index) {
