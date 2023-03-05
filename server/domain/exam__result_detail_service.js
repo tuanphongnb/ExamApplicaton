@@ -1,12 +1,13 @@
+const ExamResultDetailRepository = require("../infratructure/exam_result_detail_repository");
 class ExamResultDetailService {
     constructor(dbContext) {      
         this.dbContext = dbContext;
     }
 
-    // createExamDetail(examDetail) {
-    //     const examDetailRepo = new ExamDetailRepository(this.dbContext);
-    //     examDetailRepo.createOrUpdate(examDetail);
-    // }
+    createExamResultDetail(examResultDetail) {
+        const examResultDetailRepo = new ExamResultDetailRepository(this.dbContext);
+        examResultDetailRepo.create(examResultDetail);
+    }
 
     // async deleteExamDetailByExamId(exam_id) {
     //     const examDetailRepo = new ExamDetailRepository(this.dbContext);

@@ -30,8 +30,48 @@ function submitForm(e){
     e.preventDefault();
     // timeCount.innerHTML = timeCount.innerHTML;
     // $(quiz_box)[0].reset();
-    start_quiz.classList.remove("activeInfo");
-    info_box.classList.add("activeInfo"); //show info box
+    exam_selected = $(select_Exam).find(":selected").val();
+    if (exam_selected) {
+        $.ajax({
+            type: 'GET',
+            url: '/getExamResultByStudent',
+            data: {
+                'examId': exam_selected,
+                'studentName': student_name.value
+            },
+            success:function(res){
+                if (res && Object.keys(res).length > 0) {  
+                    $.toast({ 
+                        text : 'Học sinh "<b>' + student_name.value + '</b>" đã hoàn thành bài kiểm tra này', 
+                        bgColor : 'red',              // Background color for toast
+                        textColor : '#eee',            // text color
+                        allowToastClose : true,       // Show the close button or not
+                        hideAfter : 5000,              // `false` to make it sticky or time in miliseconds to hide after
+                        textAlign : 'left',            // Alignment of text i.e. left, right, center
+                        position : 'bottom-right'       // bottom-left or bottom-right or bottom-center or top-left or top-right or top-center or mid-center or an object representing the left, right, top, bottom values to position the toast on page
+                      });
+                }
+                else{
+                    start_quiz.classList.remove("activeInfo");
+                    info_box.classList.add("activeInfo"); //show info box
+                }
+            },
+            error: function (xhr, status, error) {
+                console.log('Error: ' + error.message);
+                $('#lblResponse').html('Error connecting to the server.');
+            }
+        });
+    }
+    else{
+        $.toast({ 
+            text : "Vui lòng chọn đề kiểm tra", 
+            textColor : '#eee',            // text color
+            allowToastClose : true,       // Show the close button or not
+            hideAfter : 5000,              // `false` to make it sticky or time in miliseconds to hide after
+            textAlign : 'left',            // Alignment of text i.e. left, right, center
+            position : 'bottom-right'       // bottom-left or bottom-right or bottom-center or top-left or top-right or top-center or mid-center or an object representing the left, right, top, bottom values to position the toast on page
+          });
+    }
 }
 
 // if exitQuiz button clicked
@@ -125,7 +165,6 @@ prev_btn.onclick = ()=>{
 
 // getting questions and options from array
 function showQuetions(index, callback){
-    exam_selected = $(select_Exam).find(":selected").val();
     exam_selected_name = $(select_Exam).find(":selected").text();
     exams.forEach(exam => {
         if (exam["id"] == exam_selected) {
@@ -290,6 +329,7 @@ function showResult(){
     $.ajax({
         url: '/processResult',
         data: {
+            'examId': exam_selected,
             'examName': exam_selected_name,
             'studentName': student_name.value,
             'examResultDetails': questions,

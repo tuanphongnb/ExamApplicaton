@@ -2,7 +2,7 @@
 CREATE TABLE exam (
  id INTEGER PRIMARY KEY AUTOINCREMENT,
  name TEXT NOT NULL,
- date DATETIME NOT NULL DEFAULT CURRENT_TIME,
+ date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
  count_down_time TEXT NOT NULL,
  maker TEXT NULL
 );
@@ -11,10 +11,10 @@ CREATE TABLE exam (
 CREATE TABLE exam_detail (
  id INTEGER PRIMARY KEY AUTOINCREMENT,
  exam_id INTEGER NOT NULL,
- num INTEGER NOT NULL,
+ num INTEGER NULL,
  question TEXT NOT NULL,
  answers TEXT NOT NULL,
- answer_correct NOT NULL
+ answer_correct TEXT NOT NULL
 );
 
 CREATE TABLE exam_result (
@@ -22,16 +22,16 @@ CREATE TABLE exam_result (
  exam_id INTEGER NOT NULL,
  student_name TEXT NOT NULL,
  student_score DECIMAL DEFAULT 0,
- date DATETIME NOT NULL DEFAULT CURRENT_TIME
+ date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE exam_result_detail (
  id INTEGER PRIMARY KEY AUTOINCREMENT,
  exam_id INTEGER NOT NULL,
  exam_result_id INTEGER NOT NULL,
- num INTEGER NOT NULL,
+ num INTEGER NULL,
  question TEXT NOT NULL,
  answers TEXT NOT NULL,
- answer_correct NOT NULL,
- answer_user NOT NULL
+ answer_correct TEXT NOT NULL,
+ answer_user TEXT NULL
 );

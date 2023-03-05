@@ -1,8 +1,8 @@
-const express = require('express');
-const http = require('http');
-const fs = require('fs-extra');
-const app = express();
-const path = require('path');
+var express = require('express');
+var http = require('http');
+var fs = require('fs-extra');
+var app = express();
+var path = require('path');
 const excelToJson = require('convert-excel-to-json');
 // var excelToJson = require('./common/handle_file/convertExcelToJson');
 const multer = require("multer");
@@ -26,10 +26,10 @@ const uploadPath = 'uploads';
 const examResultPath = path.join(__dirname, "../%s1/%s2.xlsx");
 const dbFilePath = path.resolve(__dirname, '../data/EducationExam.db');
 const db_context = new DBContext(dbFilePath);
-const examService = new ExamService(db_context);
-const examDetailService = new ExamDetailService(db_context);
-const resultService = new ExamResultService(db_context);
-const resultDetailService = new ExamResultDetailService(db_context);
+var examService = new ExamService(db_context);
+var examDetailService = new ExamDetailService(db_context);
+var resultService = new ExamResultService(db_context);
+var resultDetailService = new ExamResultDetailService(db_context);
 // ---------------------Middleware-------------------
 app.use(express.static(path.join(__dirname, '../../public')));
 app.use(express.json());
@@ -82,6 +82,16 @@ app.get('/examResult', function (req, res) {
     }
 });
 
+app.get('/getExamResultByStudent', async function (req, res) {
+    try {
+        var result = await resultService.getExamResultByStudent(req.query.examId, req.query.studentName)
+        res.json(result ?? {}); // Set disposition and send it.
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: error.message })
+    }
+});
+
 app.get('/loadExam', async function (req, res) {
     try {
         var result = await examService.getExam();
@@ -122,7 +132,6 @@ app.get('/download_exam_result', async function (req, res) {
         console.error(error);
         res.status(500).send({ message: error.message })
     }
-
 });
 
 app.post('/importQuestions', function (req, res) {

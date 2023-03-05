@@ -4,6 +4,8 @@ const ExcelJS = require('exceljs');
 const fs = require('fs-extra');
 const moment = require("moment");
 const path = require('path');
+const ExamResultRepository = require('../infratructure/exam_result_repository');
+const ExamResultDetailService = require('./exam__result_detail_service');
 
 const uploadPath = 'uploads';
 const examResultPath = path.join(__dirname, "../%s1/%s2.xlsx");
@@ -15,6 +17,7 @@ class ExamResultService {
 
     async processResult(req){
         var saveFilePath = this.parameterizedString(examResultPath, uploadPath, req.body.examName);
+        var reqBody = JSON.parse(JSON.stringify(req.body));
         if(!fs.existsSync(saveFilePath)){
             var data = [{
                 StudentName: null,
@@ -29,9 +32,50 @@ class ExamResultService {
         }
         await this.saveExamResultDetail(req, saveFilePath);
         await this.saveExamResult(req, saveFilePath);
+        await this.createExamResult(reqBody);
     }
 
-    saveExamResult = async function (data, saveFilePath) {
+    async createExamResult(reqBody){
+        var examSummary = {
+            ExamId: reqBody.examId,
+            StudentName: reqBody.studentName,
+            StudentScore: reqBody.studentScore,
+        };
+        const examResultRepository = new ExamResultRepository(this.dbContext);
+        const examResultDetailService = new ExamResultDetailService(this.dbContext);
+
+        await examResultRepository.create(examSummary)
+        .then((result) => {
+            reqBody.examResultDetails.forEach(quesAns => {
+                var examResultDetail = this.getExamResultDetail(examSummary.ExamId, result.id, quesAns);
+                examResultDetailService.createExamResultDetail(examResultDetail)
+            });
+        });
+    }
+
+    getExamResultDetail(exam_id, exam_result_id, quesAns){
+        var column_answer = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K","L", "M",
+        "N", "O", "P", "Q", "R","S", "T", "U", "V", "W", "X", "Y", "Z"]
+        var answers = [];
+        Object.keys(quesAns).forEach(attr => {
+            if (column_answer.includes(attr.replaceAll("Answer_", ""))) {
+                var answer_option = {};
+                answer_option[attr] =  quesAns[attr]
+                answers.push(answer_option);
+            }
+        });
+        return {
+            exam_id: exam_id,
+            exam_result_id: exam_result_id,
+            num: quesAns.num,
+            question: quesAns.question,
+            answers: JSON.stringify(answers),
+            answer_correct: quesAns.answer_correct,
+            answer_user: quesAns.answer_user
+        }
+    }
+
+    async saveExamResult(data, saveFilePath) {
         try {
             var workbook = new ExcelJS.Workbook();
             await workbook.xlsx.readFile(saveFilePath);
@@ -60,14 +104,13 @@ class ExamResultService {
                 xlsx.utils.book_append_sheet(file, ws, sheetSummaryName);
                 await sheetJsStyle.writeFile(file, saveFilePath, {cellStyles: true});
             }
-    
         } catch (error) {
             console.error(error);
             throw error;
         }
     }
     
-    saveExamResultDetail = async function (data, saveFilePath) {
+    async saveExamResultDetail(data, saveFilePath) {
         try {
             var file = await xlsx.readFile(saveFilePath);
             data.body.examResultDetails.forEach(item => {
@@ -229,32 +272,12 @@ class ExamResultService {
     //     } );
     // }
 
-    // getExamDetail(exam_id, quesAns){
-    //     var column_answer = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K","L", "M",
-    //     "N", "O", "P", "Q", "R","S", "T", "U", "V", "W", "X", "Y", "Z"]
-    //     var answers = [];
-    //     Object.keys(quesAns).forEach(attr => {
-    //         if (column_answer.includes(attr.replaceAll("Answer_", ""))) {
-    //             var answer_option = {};
-    //             answer_option[attr] =  quesAns[attr]
-    //             answers.push(answer_option);
-    //         }
-    //     });
-    //     return {
-    //         exam_id: exam_id,
-    //         num: quesAns.Num,
-    //         question: quesAns.Question,
-    //         answers: JSON.stringify(answers),
-    //         answer_correct: quesAns.Answer_Correct
-    //     }
-    // }
-
-    // async getExam(){
-    //     const examRepository = new ExamRepository(this.dbContext);
-    //     return await examRepository.getExam().then((result) => {
-    //         return result;
-    //     });
-    // }
+    async getExamResultByStudent(exam_id, studentName){
+        const examResRepository = new ExamResultRepository(this.dbContext);
+        return await examResRepository.getExamResultByStudent(exam_id, studentName).then((result) => {
+            return result;
+        });
+    }
 }
 
 module.exports = ExamResultService;
